@@ -2,9 +2,10 @@ const functions = require("firebase-functions");
 const fetch = require('node-fetch');
 const admin = require('firebase-admin');
 admin.initializeApp();
-const candidate = require("./test_user").candidate;
-const filter = require('./test_filter').filter;
+const candidate = require("./test_data_folders/test_user").candidate;
+const filter = require('./test_data_folders/test_filter').filter;
 const ff = require("./formatted_functions").formatted_functions;
+const { user } = require("firebase-functions/v1/auth");
 
 var bubble_url = "https://elbanana.com/version-for-ignat/api/1.1/obj/";
 var help = "https://elbanana.com/version-for-ignat/api/1.1/meta"; // все ключи, что есть
@@ -18,6 +19,8 @@ const config_candidate = {
     "PreferedTech": "candidatepreftech",
     "RelatedSchool": "candidateschool",
     "Country": "country",
+    "Role": "candidaterolelist",
+    // "Skill": "candidateskillslist",
     // "MainJobSearchStatus": "jobsearchstatus",
     // "MainReadyStart": 'readystartmonth',
     // "MainReadyStartMonth": "ReadyStartMonth",
@@ -40,6 +43,7 @@ const config_filter = {
     "Roles": "filterrolelist",
     "Skills": "candidateskillslist",
     "CandidateRoleList": "candidaterolelist",
+    // "TechTag": 
 }
 // Filter - Roles - list of FilterRoleList - (CandidateRoleList, Experience)
 // Candidate - PreferedRole - list of CandidatePrefRoles - (Candidate, ExperienceSelection, ExperienceYear, Role (CandidateRoleList))
@@ -115,6 +119,29 @@ exports.getAllDatabase = functions.https.onRequest(async (request, response) => 
     .catch((err) => console.log(err));
 });
 
+exports.addNewCandidate = functions.https.onRequest(async (request, response) => {
+    if (request.method != "POST") {
+        response.send({"error": "Request is not permitted"});
+        return;
+    }
+    var user_id = request.body['user_id'];
+    fetch(`${bubble_url}${"candidate"}/${user_id}`)
+    .then((res) => res.json())
+    .then((res) => {
+        if (res['response']) {
+            buildJsonObject(res['response'], config_candidate)
+            .then(async (result) => await admin.firestore().collection('candidate').doc(user_id).set(result))
+            .then((res) => response.send({"result": "added"}))
+            .catch((err) => response.send({"error" : err}));
+            return;
+        } else {
+            response.send("Error! Maybe id is wrong");
+            return;
+        }
+    })
+    .catch((err) => response.send("Error occupied! " + err));
+});
+
 exports.getFilteredCandidates = functions.https.onRequest(async (request, response) => {
     var filter_id = request.query['id'];
     if (!filter_id) {
@@ -125,14 +152,30 @@ exports.getFilteredCandidates = functions.https.onRequest(async (request, respon
     .then((res) => res.json())
     .then((res) => {
         if (res['response']) {
-            buildJsonObject(res['response'], config_filter).then((result) => response.send(result));
-            return;
+            buildJsonObject(res['response'], config_filter)
+            .then(async (result_filter) => {
+                const db = await admin.firestore().collection('candidate');
+                var snapshot = await db.get();
+                if (snapshot.empty) {
+                    functions.logger.log("SNAPSHOT IS EMPTY");
+                    response.send({"result" : "OK", "items": []});
+                    return;
+                }
+                var items = [];
+                snapshot.forEach((doc) => items.push(doc.data()));
+                var filtered = items.filter((i) => filterFunction(result_filter, i)).map((i) => i['_id']);
+                response.send({"result": "OK", "items": filtered});
+            })
+            .catch((err) => {
+                functions.logger.log("GOT AN ERROR", err);
+                response.send({"result": "error"})
+            });
         } else {
-            response.send("Error! Maybe id is wrong");
+            response.send({"result": "error", "desc" : "Error! Maybe id is wrong"});
             return;
         }
     })
-    .catch((err) => response.send("Error occupied! " + err));
+    .catch((err) => response.send({"result": "error", "desc" : "Error occupied! " + err}));
 });
 
 const filterFunction = (filter=filter, candidate=candidate) => {
@@ -140,7 +183,8 @@ const filterFunction = (filter=filter, candidate=candidate) => {
         return false;
     if (filter["CategoryChild"] && (!candidate["CategoryChild"] || ff.intersect(filter["CategoryChild"], candidate["CategoryChild"]).length == 0))
         return false;
-    // if (filter["IndustryList"] && )
+    if (filter["IndustryList"] && (!candidate['IndustryReady'] || ff.intersect(filter["IndustryList"], candidate["IndustryReady"]).length == 0))
+        return false;
     if (filter["SearchSubstring"] && !candidate["MainTitle"].toLowerCase().includes(filter['SearchSubstring'].toLowerCase()))
         return false;
     
@@ -153,8 +197,21 @@ const filterFunction = (filter=filter, candidate=candidate) => {
         return false;
     if (filter["ParttimeAvailable"] && !candidate["JobTypeParttime"])
         return false;
-    // if ()
+    if (filter["ParttimeHours"] && (!candidate["ParttimeHours"] || filter["ParttimeHours"] <= parseInt(candidate["ParttimeHours"])))
+        return false;
+    
+    // Добавить роли
+    // Filter -> Roles -> (CandidateRoleList[0], Experience)    Candidate - RelatedExperience (list) -> Role или PreferedRole -> Role
+    if (filter["ExperienceYears"] && (!candidate["ExperienceTotalYears"] ||  candidate["ExperienceTotalYears"] < ff.experienceListToRange(filter["ExperienceYears"])[0] ||  candidate["ExperienceTotalYears"] > ff.experienceListToRange(filter["ExperienceYears"])[1]))
+        return false;
+    // TechList в фильтре, кандидат - RelatedExperience -> Technology -> 
+    // Filter -> Skills  Candidate - RelatedExperience (list) - Skill
 
+    if (!ff.languageComparasion(filter["Languages"], candidate["RelatedLanguages"]))
+        return false;
+    // остальные фильтры
+    functions.logger.log("SHOULD RETURN TRUE");
+    return true;
     
 }
 
