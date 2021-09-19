@@ -29,8 +29,30 @@ var candidate = {
             "DurationEndYear": "2018",
             "DurationStartYear": "2016",
             "Role": [
-                "1624313214836x730942702547978700",
-                "1624313214837x761452108741484000"
+                {
+                    "Status": "System",
+                    "Category": [
+                        "Development"
+                    ],
+                    "Modified Date": "2021-06-21T22:06:54.836Z",
+                    "Created Date": "2021-06-21T22:06:54.836Z",
+                    "Name": "Backend Developer",
+                    "TeamLead": false,
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1624313214836x730942702547978700"
+                },
+                {
+                    "Status": "System",
+                    "Category": [
+                        "Development"
+                    ],
+                    "Modified Date": "2021-06-21T22:06:54.837Z",
+                    "Created Date": "2021-06-21T22:06:54.837Z",
+                    "Name": "Frontend Developer",
+                    "TeamLead": false,
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1624313214837x761452108741484000"
+                }
             ],
             "Skill": [
                 "1631464917384x961335625806250000",
@@ -71,7 +93,18 @@ var candidate = {
             "DurationEndYear": "2021",
             "DurationStartYear": "2018",
             "Role": [
-                "1624313214838x995999234865579800"
+                {
+                    "Status": "System",
+                    "Category": [
+                        "Development"
+                    ],
+                    "Modified Date": "2021-06-21T22:06:54.838Z",
+                    "Created Date": "2021-06-21T22:06:54.838Z",
+                    "Name": "Mobile Developer",
+                    "TeamLead": false,
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1624313214838x995999234865579800"
+                }
             ],
             "Skill": [
                 "1631465063884x450419482748518400",
@@ -148,7 +181,20 @@ var candidate = {
             "Candidate": "1631464328591x593038431780077600",
             "Modified Date": "2021-09-12T16:36:05.583Z",
             "Created Date": "2021-09-12T16:36:05.531Z",
-            "Role": "1624313214836x730942702547978700",
+            "Role": [
+                {
+                    "Status": "System",
+                    "Category": [
+                        "Development"
+                    ],
+                    "Modified Date": "2021-06-21T22:06:54.836Z",
+                    "Created Date": "2021-06-21T22:06:54.836Z",
+                    "Name": "Backend Developer",
+                    "TeamLead": false,
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1624313214836x730942702547978700"
+                }
+            ],
             "ExperienceSelection": "2-4",
             "Created By": "1631464330514x404726854607328100",
             "_id": "1631464564678x837857345894613000",
@@ -158,7 +204,20 @@ var candidate = {
             "Candidate": "1631464328591x593038431780077600",
             "Modified Date": "2021-09-12T16:36:11.893Z",
             "Created Date": "2021-09-12T16:36:11.848Z",
-            "Role": "1624313214837x761452108741484000",
+            "Role": [
+                {
+                    "Status": "System",
+                    "Category": [
+                        "Development"
+                    ],
+                    "Modified Date": "2021-06-21T22:06:54.837Z",
+                    "Created Date": "2021-06-21T22:06:54.837Z",
+                    "Name": "Frontend Developer",
+                    "TeamLead": false,
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1624313214837x761452108741484000"
+                }
+            ],
             "ExperienceSelection": "4-6",
             "Created By": "1631464330514x404726854607328100",
             "_id": "1631464571373x715994293928984600",
@@ -168,7 +227,20 @@ var candidate = {
             "Candidate": "1631464328591x593038431780077600",
             "Modified Date": "2021-09-12T16:36:21.173Z",
             "Created Date": "2021-09-12T16:36:21.127Z",
-            "Role": "1624313214911x364405744052992450",
+            "Role": [
+                {
+                    "Status": "System",
+                    "Category": [
+                        "Data"
+                    ],
+                    "Modified Date": "2021-06-21T22:06:54.911Z",
+                    "Created Date": "2021-06-21T22:06:54.911Z",
+                    "Name": "Head of Data Engineering",
+                    "TeamLead": true,
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1624313214911x364405744052992450"
+                }
+            ],
             "ExperienceSelection": "0-1",
             "Created By": "1631464330514x404726854607328100",
             "_id": "1631464580706x135549801823207420",
@@ -178,7 +250,20 @@ var candidate = {
             "Candidate": "1631464328591x593038431780077600",
             "Modified Date": "2021-09-12T16:36:33.816Z",
             "Created Date": "2021-09-12T16:36:33.771Z",
-            "Role": "1624313214838x995999234865579800",
+            "Role": [
+                {
+                    "Status": "System",
+                    "Category": [
+                        "Development"
+                    ],
+                    "Modified Date": "2021-06-21T22:06:54.838Z",
+                    "Created Date": "2021-06-21T22:06:54.838Z",
+                    "Name": "Mobile Developer",
+                    "TeamLead": false,
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1624313214838x995999234865579800"
+                }
+            ],
             "ExperienceSelection": "6+",
             "Created By": "1631464330514x404726854607328100",
             "_id": "1631464593503x269634749684252670"
@@ -451,7 +536,16 @@ var candidate = {
             "Candidate": "1631464328591x593038431780077600",
             "Modified Date": "2021-09-12T16:37:04.509Z",
             "Created Date": "2021-09-12T16:37:04.462Z",
-            "TechTag": "1626989389275x946584353286990500",
+            "TechTag": [
+                {
+                    "Status": "System",
+                    "Modified Date": "2021-07-22T21:29:49.275Z",
+                    "Created Date": "2021-07-22T21:29:49.275Z",
+                    "Name": "react-native",
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1626989389275x946584353286990500"
+                }
+            ],
             "ExperienceSelection": "4-6",
             "Created By": "1631464330514x404726854607328100",
             "_id": "1631464623418x242477614890745860",
@@ -461,7 +555,16 @@ var candidate = {
             "Candidate": "1631464328591x593038431780077600",
             "Modified Date": "2021-09-12T16:37:13.992Z",
             "Created Date": "2021-09-12T16:37:13.947Z",
-            "TechTag": "1626989388852x360158595682284600",
+            "TechTag": [
+                {
+                    "Status": "System",
+                    "Modified Date": "2021-07-22T21:29:48.852Z",
+                    "Created Date": "2021-07-22T21:29:48.852Z",
+                    "Name": "python-idle",
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1626989388852x360158595682284600"
+                }
+            ],
             "ExperienceSelection": "2-4",
             "Created By": "1631464330514x404726854607328100",
             "_id": "1631464633669x395762612330037250",
@@ -471,7 +574,16 @@ var candidate = {
             "Candidate": "1631464328591x593038431780077600",
             "Modified Date": "2021-09-12T16:37:24.119Z",
             "Created Date": "2021-09-12T16:37:24.074Z",
-            "TechTag": "1626989445811x471660104241713660",
+            "TechTag": [
+                {
+                    "Status": "System",
+                    "Modified Date": "2021-07-22T21:30:45.811Z",
+                    "Created Date": "2021-07-22T21:30:45.811Z",
+                    "Name": "celery",
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1626989445811x471660104241713660"
+                }
+            ],
             "ExperienceSelection": "1-2",
             "Created By": "1631464330514x404726854607328100",
             "_id": "1631464643741x642884450105688000",
@@ -481,7 +593,16 @@ var candidate = {
             "Candidate": "1631464328591x593038431780077600",
             "Modified Date": "2021-09-12T16:37:53.856Z",
             "Created Date": "2021-09-12T16:37:53.812Z",
-            "TechTag": "1626989399323x556673131308843800",
+            "TechTag": [
+                {
+                    "Status": "System",
+                    "Modified Date": "2021-07-22T21:29:59.323Z",
+                    "Created Date": "2021-07-22T21:29:59.323Z",
+                    "Name": "ssl",
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1626989399323x556673131308843800"
+                }
+            ],
             "ExperienceSelection": "6+",
             "Created By": "1631464330514x404726854607328100",
             "_id": "1631464673543x604153072058368000"
@@ -490,7 +611,16 @@ var candidate = {
             "Candidate": "1631464328591x593038431780077600",
             "Modified Date": "2021-09-12T16:38:04.056Z",
             "Created Date": "2021-09-12T16:38:04.007Z",
-            "TechTag": "1626989435660x269719571783315400",
+            "TechTag": [
+                {
+                    "Status": "System",
+                    "Modified Date": "2021-07-22T21:30:35.660Z",
+                    "Created Date": "2021-07-22T21:30:35.660Z",
+                    "Name": "qwidget",
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "_id": "1626989435660x269719571783315400"
+                }
+            ],
             "ExperienceSelection": "0-1",
             "Created By": "1631464330514x404726854607328100",
             "_id": "1631464683728x832993257160441900",

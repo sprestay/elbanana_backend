@@ -1,5 +1,4 @@
 const filter = {
-    "_id": "1631459563658x554567575020765200",
     "CategoryParent": [
         "Infrastructure",
         "Security",
@@ -54,7 +53,6 @@ const filter = {
     "RelocationUS": true,
     "Roles": [
         {
-            "_id": "1631459563658x395584659027394560",
             "CandidateRoleList": [
                 {
                     "Category": [
@@ -71,10 +69,10 @@ const filter = {
             ],
             "Experience": "1-2",
             "Created Date": "2021-09-12T15:12:44.352Z",
-            "Modified Date": "2021-09-12T15:13:50.599Z"
+            "Modified Date": "2021-09-12T15:13:50.599Z",
+            "_id": "1631459563658x395584659027394560"
         },
         {
-            "_id": "1631459631363x199123506610307070",
             "CandidateRoleList": [
                 {
                     "Category": [
@@ -91,10 +89,10 @@ const filter = {
             ],
             "Experience": "6+",
             "Created Date": "2021-09-12T15:13:51.848Z",
-            "Modified Date": "2021-09-12T15:13:57.657Z"
+            "Modified Date": "2021-09-12T15:13:57.657Z",
+            "_id": "1631459631363x199123506610307070"
         },
         {
-            "_id": "1631459638520x898389617800380400",
             "CandidateRoleList": [
                 {
                     "Category": [
@@ -111,10 +109,10 @@ const filter = {
             ],
             "Experience": "1-2",
             "Created Date": "2021-09-12T15:13:58.693Z",
-            "Modified Date": "2021-09-12T15:14:08.370Z"
+            "Modified Date": "2021-09-12T15:14:08.370Z",
+            "_id": "1631459638520x898389617800380400"
         },
         {
-            "_id": "1631459649754x313134139201814500",
             "CandidateRoleList": [
                 {
                     "Category": [
@@ -131,7 +129,8 @@ const filter = {
             ],
             "Experience": "1-2",
             "Created Date": "2021-09-12T15:14:09.970Z",
-            "Modified Date": "2021-09-12T15:14:21.637Z"
+            "Modified Date": "2021-09-12T15:14:21.637Z",
+            "_id": "1631459649754x313134139201814500"
         }
     ],
     "JobType": "Permanent",
@@ -140,31 +139,31 @@ const filter = {
     "ParttimeHours": 55,
     "Languages": [
         {
-            "_id": "1631459563658x876346943172771800",
             "Language": [
                 "English"
             ],
             "Level": "Work Proficient (B2)",
             "Created Date": "2021-09-12T15:12:44.264Z",
-            "Modified Date": "2021-09-12T15:30:13.828Z"
+            "Modified Date": "2021-09-12T15:30:13.828Z",
+            "_id": "1631459563658x876346943172771800"
         },
         {
-            "_id": "1631459743427x954451601314021400",
             "Language": [
                 "Russian"
             ],
             "Level": "Fluent (C1)",
             "Created Date": "2021-09-12T15:15:43.872Z",
-            "Modified Date": "2021-09-12T15:15:48.859Z"
+            "Modified Date": "2021-09-12T15:15:48.859Z",
+            "_id": "1631459743427x954451601314021400"
         },
         {
-            "_id": "1631460615561x723292925809393700",
             "Language": [
                 "French"
             ],
             "Level": "Beginner (A2)",
             "Created Date": "2021-09-12T15:30:15.771Z",
-            "Modified Date": "2021-09-12T15:30:21.356Z"
+            "Modified Date": "2021-09-12T15:30:21.356Z",
+            "_id": "1631460615561x723292925809393700"
         }
     ],
     "ExperienceYears": [
@@ -174,40 +173,68 @@ const filter = {
     ],
     "TechList": [
         {
-            "_id": "1631460505954x629655974893322200",
             "Experience": "0-1",
             "TechTag": [
-                "1626989468150x813953400189973800"
+                {
+                    "Name": "flutter",
+                    "Status": "System",
+                    "Created Date": "2021-07-22T21:31:08.150Z",
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "Modified Date": "2021-07-22T21:31:08.150Z",
+                    "_id": "1626989468150x813953400189973800"
+                }
             ],
             "Created Date": "2021-09-12T15:28:26.485Z",
-            "Modified Date": "2021-09-12T15:28:57.363Z"
+            "Modified Date": "2021-09-12T15:28:57.363Z",
+            "_id": "1631460505954x629655974893322200"
         },
         {
-            "_id": "1631460539923x643568689136009200",
             "Experience": "4-6",
             "TechTag": [
-                "1626989389596x143339612926091540"
+                {
+                    "Name": "javascript",
+                    "Status": "System",
+                    "Created Date": "2021-07-22T21:29:49.596Z",
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "Modified Date": "2021-07-22T21:29:49.596Z",
+                    "_id": "1626989389596x143339612926091540"
+                }
             ],
             "Created Date": "2021-09-12T15:29:00.136Z",
-            "Modified Date": "2021-09-12T15:29:22.329Z"
+            "Modified Date": "2021-09-12T15:29:22.329Z",
+            "_id": "1631460539923x643568689136009200"
         },
         {
-            "_id": "1631460563149x398444489084502000",
             "Experience": "1-2",
             "TechTag": [
-                "1626989364186x233299233731177900"
+                {
+                    "Name": "turtle-graphics",
+                    "Status": "System",
+                    "Created Date": "2021-07-22T21:29:24.186Z",
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "Modified Date": "2021-07-22T21:29:24.186Z",
+                    "_id": "1626989364186x233299233731177900"
+                }
             ],
             "Created Date": "2021-09-12T15:29:23.387Z",
-            "Modified Date": "2021-09-12T15:29:38.072Z"
+            "Modified Date": "2021-09-12T15:29:38.072Z",
+            "_id": "1631460563149x398444489084502000"
         },
         {
-            "_id": "1631460579690x484447034380124200",
             "Experience": "6+",
             "TechTag": [
-                "1626989364180x429391210255539100"
+                {
+                    "Name": "mysqli",
+                    "Status": "System",
+                    "Created Date": "2021-07-22T21:29:24.181Z",
+                    "Created By": "admin_user_newplatformmaxim_live",
+                    "Modified Date": "2021-07-22T21:29:24.181Z",
+                    "_id": "1626989364180x429391210255539100"
+                }
             ],
             "Created Date": "2021-09-12T15:29:40.420Z",
-            "Modified Date": "2021-09-12T15:29:54.131Z"
+            "Modified Date": "2021-09-12T15:29:54.131Z",
+            "_id": "1631460579690x484447034380124200"
         }
     ],
     "JobLocation": "On-site & Remote",
@@ -237,7 +264,8 @@ const filter = {
     "SalaryCurrency": "USD",
     "PaymentModality": "/ month",
     "RelocationEU": true,
-    "MaxSalary": 150000
+    "MaxSalary": 150000,
+    "_id": "1631459563658x554567575020765200"
 }
 
 exports.filter = filter;
