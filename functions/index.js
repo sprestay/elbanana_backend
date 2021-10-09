@@ -8,8 +8,8 @@ const filter = require('./test_data_folders/test_filter').filter;
 // удалить
 const ff = require("./formatted_functions").formatted_functions;
 
-var bubble_url = "https://elbanana.com/version-for-ignat/api/1.1/obj/";
-var help = "https://elbanana.com/version-for-ignat/api/1.1/meta"; // все ключи, что есть
+var bubble_url = "https://elbanana.com/version-test/api/1.1/obj/";
+var help = "https://elbanana.com/version-test/api/1.1/meta"; // все ключи, что есть
 
 const config_candidate = {
     "RelatedLanguages": "candidatelanguage",
@@ -200,7 +200,7 @@ const filterFunction = (filter=filter, candidate=candidate) => {
         return false;
     if (ff.listToBool(filter["IndustryList"]) && (!ff.listToBool(candidate['IndustryReady']) || ff.intersect(filter["IndustryList"], candidate["IndustryReady"]).length == 0))
         return false;
-    if (filter["SearchSubstring"] && !candidate["MainTitle"].toLowerCase().includes(filter['SearchSubstring'].toLowerCase()))
+    if (filter["SearchSubstring"] && (!candidate['MainTitle'] || !candidate["MainTitle"].toLowerCase().includes(filter['SearchSubstring'].toLowerCase())))
         return false;
     
     step1++;
@@ -242,7 +242,14 @@ const filterFunction = (filter=filter, candidate=candidate) => {
     if (!ff.salaryComparasion(filter, candidate))
         return false;
     step5++;
+
+    if (filter['ActivelyLookingForJob'] == true && (!candidate['MainJobSearchStatus'] || candidate['MainJobSearchStatus'] != "Actively looking for a job")) {
+        return false;
+    }
     // остальные фильтры
+    if (!ff.searchcandidatelocation(filter, candidate))
+        return false;
+
     return true;
     
 }

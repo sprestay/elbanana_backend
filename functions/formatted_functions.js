@@ -189,31 +189,36 @@ const StatusChecker = (fil, c) => {
         return true;
 
     var f = fil["JobLocation"];
-    if (c["AddressFirst"] && c["RemoteOpenYes"])
-        return true;
-    if (c["AddressFirst"] && (f == "On-site & Remote" || f == "On-site")) {
-        if (c["Address"] && fil["PreferredLocation"]) { // кандидат и hr указали желаемое место работы
-            f_lat = fil["PreferredLocation"]["lat"];
-            f_lng = fil["PreferredLocation"]["lng"];
-            c_lat = c["Address"]["lat"];
-            c_lng = c["Address"]["lng"];
-            if (f_lat == c_lat && f_lng == c_lng)
-                return true;
-            f_dist = extractDistanceFromSearch(fil["SearchRadius"]); // string
-            c_dist = c["DistanceKm"]; // integer
-            
-            if (f_dist != undefined) {
-                var dist = getDistanceFromLatLonInKm(f_lat, f_lng, c_lat, c_lng);
-                if (dist <= f_dist) {
+    if (c["MainLocation"] && (f == "On-site & Remote" || f == "On-site")) { // кандидат выбрал "Open to office"
+        if (fil['PreferredLocation']) {
+            var res = c['CityGeo'].filter((i) => {
+                f_lat = fil["PreferredLocation"]["lat"];
+                f_lng = fil["PreferredLocation"]["lng"];
+                c_lat = i["lat"];
+                c_lng = c["lng"];
+                if (f_lat == c_lat && f_lng == c_lng)
                     return true;
-                } else {
-                    return false;
+                f_dist = extractDistanceFromSearch(fil['SearchRadius']);
+                if (f_dist != undefined) {
+                    var dist = getDistanceFromLatLonInKm(f_lat, f_lng, c_lat, c_lng);
+                    if (dist <= f_dist) {
+                        return true;
+                    } else {
+                        return false;
+                    }
                 }
-            }
+            });
+            if (res.length != 0)
+                return true;
+            else {
+                if (!c['RemoteOpenYes']) // если кандидат не рассматривает удаленную работу, иначе - проверяем дальше
+                    return false;
+            }   
+        } else {
+            return true;    
         }
-        return true;
     }
-    if (c["RemoteOpenYes"] && (f == "On-site & Remote" || f == "Remote")) {
+    if (c["RemoteOpenYes"] && (f == "On-site & Remote" || f == "Remote")) { // сравниваем удаленную работу
         // проверяем часы работы
         if (fil["PreferredTimezone"] && fil["RemoteOpenTimezone"]) {
             var filter_timezone = TimeZoneToInt(fil["RemoteOpenTimezone"]);
@@ -250,7 +255,7 @@ const StatusChecker = (fil, c) => {
 
     // Кандидат из страны, откуда принимают
     if (ListToBool(fil["RelocationCountries"])) {
-        var c_country = c["MainCountry"].map((item) => item["countryName"]);
+        var c_country = c["Country"].map((item) => item["countryName"]);
         var f_country = fil["RelocationCountries"].map((item) => item["countryName"]);
         if (intersect(c_country, f_country).length != 0)
             return true;
@@ -284,9 +289,26 @@ const SalaryComparasion = (f, c) => {
                 val *= paymentModalityToYear(i["SalaryPeriod"]);
             return val >= min && val <= max ? true : false;
         }
-        return true;
+        return true; // если не указал - значит на все согласен
     });
     return res.length > 0 ? true : false;
+}
+
+const SearchCandidateLocation = (f, c) => {
+    if (!f['SearchCandidateLocation'])
+        return true
+    if (!f['MainLocationGeo'])
+        return false
+
+    var fil_lat = f['SearchCandidateLocation']['lat'];
+    var fil_lng = f['SearchCandidateLocation']['lng'];
+    var can_lat = f['MainLocationGeo']['lat'];
+    var can_lng = f['MainLocationGeo']['lng'];
+    var dist = getDistanceFromLatLonInKm(fil_lat, fil_lng, can_lat, can_lng);
+    if (dist <= 100)
+        return true;
+    else
+        return false; 
 }
 
 exports.formatted_functions = {
@@ -299,4 +321,5 @@ exports.formatted_functions = {
     "techListComparasion": TechListComparasion,
     'preferedLocationComparasion': PreferedLocationComparasion,
     "salaryComparasion": SalaryComparasion,
+    'searchcandidatelocation': SearchCandidateLocation,
 }
