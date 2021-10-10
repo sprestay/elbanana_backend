@@ -56,7 +56,9 @@ const ConvertCanStartFunction = () => {
     }
 }
 
-
+bubble_fn_ConvertWorkTimeToString(ConvertJobTypesToString());
+bubble_fn_ConvertPlacementToString(ConvertPlacementToString());
+bubble_fn_ConvertCanStartFunction(ConvertCanStartFunction());
 // ФУНКЦИИ ФИЛЬТРАЦИИ
 // jobTypeFilter
 const jobTypeFilter = (JobTypeContract, JobTypeInternship, JobTypeParttime, JobTypePermanent) => {

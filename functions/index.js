@@ -46,6 +46,7 @@ const config_filter = {
     // "Skills": "candidateskillslist",
     "CandidateRoleList": "candidaterolelist",
     "TechTag": "candidatetechlist",
+    "RelocationCountries": "country",
 }
 // Filter - Roles - list of FilterRoleList - (CandidateRoleList, Experience)
 // Candidate - PreferedRole - list of CandidatePrefRoles - (Candidate, ExperienceSelection, ExperienceYear, Role (CandidateRoleList))

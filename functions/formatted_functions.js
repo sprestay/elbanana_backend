@@ -137,10 +137,13 @@ const TechListComparasion = (f, c) => {
 
 // сравнение локаций
 const PreferedLocationComparasion = (f, c) => {
+    if (f['JobLocation'] == undefined) // рекрутер не заполнял данный фильтр //On-site / Remote ...
+        return true;
+
     if (!ListToBool(c["PreferedLocation"])) // загулшка. Незаполненных быть не должно
         return false;
 
-    var results = c["PreferedLocation"].filter((i) => StatusChecker(f, i));
+    var results = c["PreferedLocation"].filter((i) => StatusChecker2(f, i, c));
     if (results.length != 0)
         return true;
     else
@@ -183,87 +186,209 @@ const extractDistanceFromSearch = (str) => {
 // фильр - WorkPermitFromMyCountry
 
 // кандидат -
-
-const StatusChecker = (fil, c) => {
-    if (fil['JobLocation'] == undefined)
+const CompareAdresses = (addr1, addr2, radius=100) => {
+    a1_lat = addr1['lat'];
+    a1_lng = addr1['lng'];
+    a2_lat = addr2['lat'];
+    a2_lng = addr2['lng'];
+    var dist = getDistanceFromLatLonInKm(a1_lat, a1_lng, a2_lat, a2_lng);
+    if (dist <= radius) {
         return true;
+    } else {
+        return false;
+    }
+}
 
+const StatusChecker = (fil, c, candidate) => {
     var f = fil["JobLocation"];
-    if (c["MainLocation"] && (f == "On-site & Remote" || f == "On-site")) { // кандидат выбрал "Open to office"
-        if (fil['PreferredLocation']) {
-            var res = c['CityGeo'].filter((i) => {
-                f_lat = fil["PreferredLocation"]["lat"];
-                f_lng = fil["PreferredLocation"]["lng"];
-                c_lat = i["lat"];
-                c_lng = c["lng"];
-                if (f_lat == c_lat && f_lng == c_lng)
-                    return true;
-                f_dist = extractDistanceFromSearch(fil['SearchRadius']);
-                if (f_dist != undefined) {
-                    var dist = getDistanceFromLatLonInKm(f_lat, f_lng, c_lat, c_lng);
-                    if (dist <= f_dist) {
-                        return true;
-                    } else {
-                        return false;
-                    }
-                }
-            });
-            if (res.length != 0)
-                return true;
-            else {
-                if (!c['RemoteOpenYes']) // если кандидат не рассматривает удаленную работу, иначе - проверяем дальше
+    if (f == 'Remote') { // HR ищет на удаленную работу
+        if (c['RemoteOpenYes'] != true) // текущая prefered-location кандидата не подразумевает удаленную работу
+            return false;
+        if (!fil['RemoteOpenTimezone']) // HR не указал желаемую timezone. Показываем всех кандидатов
+            return true;
+        var candidate_timezone = TimeZoneToInt(c['RemoteOpenTimezone']);
+        var filter_timezone = TimeZoneToInt(fil['RemoteOpenTimezone']);
+        var delta = fil['RemoteOpenHours'] ? parseInt(fil['RemoteOpenHours']) : 0;
+        if (candidate_timezone >= filter_timezone - delta && candidate_timezone <= filter_timezone + delta) // нужно проверить корректность расчетов
+            return true; // кандидат находится в нужном часовом поясе
+        else
+            return false;
+    }
+    if (f == 'On-site') { // только офисная работа
+        var filter_location = fil['PreferredLocation'];
+        var filter_radius = fil['SearchRadius'] ? extractDistanceFromSearch(fil['SearchRadius']) : 100; // если HR не указал radius, дефолтно ставим 100км
+        var candidate_main_location = candidate['MainLocationGeo'];
+        if (!candidate_main_location) // у кандидата не указан адрес проживания
+            return false;
+        if (CompareAdresses(filter_location, candidate_main_location, filter_radius)) // сравниваем MainLocation кандидата. Если нас это не устраивает - фильтруем дальше
+            return true;
+
+        // проверить, что принимаем из другой страны
+        var relocate = fil['EnableToRelocate'];
+        var relocate_ww = fil['RelocationWorldWide'];
+        var relocate_wc = fil['RelocationWithinCountry'];
+        var relocate_asia = fil['RelocationAsia'];
+        var relocate_eu = fil['RelocationEU'];
+        var work_permit = fil['WorkPermitFromMyCountry'];
+        var relocation_countries = fil['RelocationCountries'] ? fil['RelocationCountries'].map((country) => country['countryName']) : [];
+        var candidate_country = c['Country'] ? c['Country']['countryName'] : false;
+        if (candidate_country == false) { // если у preferedLocation кандидата указана некорректно. 
+            return false;
+        }
+        if (work_permit == true && c['WorkPermission'] == true && c['Country']['countryCode'] == fil['PreferedLocationCountry']) // сравниванием разрешение на работу
+            return true; //  нужно проверять города. Не можем вернуть 
+        if (c['Country']['countryCode'] != fil['PreferedLocationCountry']) { // если страна кандидата не совпадает со страной работы - проверяем.
+            if (!relocate) // HR никого не принимает - сразу нет
+                return false;
+            var c1 = c['Country']['continentName'] == 'Asia' && relocate_asia;
+            var c2 = c['Country']['continentCode'] == 'EU' && relocate_eu;
+            var c3 = relocation_countries.includes(candidate_country);
+
+            if (relocate_ww || c1 || c2 || c3) { // если нас устраивает какая-либо релокация
+                var results = c['CityGeo'].filter((city) => CompareAdresses(city, filter_location, filter_radius)); // и кандидат хочет переезжать к HR
+                if (results.length <= 0)
                     return false;
-            }   
-        } else {
-            return true;    
-        }
-    }
-    if (c["RemoteOpenYes"] && (f == "On-site & Remote" || f == "Remote")) { // сравниваем удаленную работу
-        // проверяем часы работы
-        if (fil["PreferredTimezone"] && fil["RemoteOpenTimezone"]) {
-            var filter_timezone = TimeZoneToInt(fil["RemoteOpenTimezone"]);
-            var filter_hours = 0;
-            if (f["RemoteOpenHours"])
-                filter_hours += parseInt(fil["RemoteOpenHours"]);
-            var i = [];
-            for (let j= filter_timezone - filter_hours; j <= filter_timezone + filter_hours; j++) {
-                i.push(j);
-            };
-            if (c["RemoteOpenTimezoneNum"]) {
-                if (c["RemoteOpenHoursNum"]) {
-                    var tmp = [c["RemoteOpenTimezoneNum"] - parseInt(c["RemoteOpenHoursNum"]), c["RemoteOpenTimezoneNum"] + parseInt(c["RemoteOpenHoursNum"])];
-                } else {
-                    var tmp = [c["RemoteOpenTimezoneNum"], c["RemoteOpenTimezoneNum"]];
-                }
-                var k = [];
-                for (let j = tmp[0]; j <= tmp[1]; j++) {
-                    k.push(j);
-                }
-                // сверяем интервалы
-                return intersect(i, k).length == 0 ? false : true;
-            } else {
-                return true; // будем считать, что кандидату пофиг
+                else
+                    return true;
             }
+            return false;
+        } else { // кандидат в стране рекрутера
+            var results = c['CityGeo'].filter((city) => CompareAdresses(city, filter_location, filter_radius));
+            if (results.length > 0 && relocate_wc) // кандидат хочет переехать и рекрутер не против
+                return true;
+            else
+                return false;
         }
-        return true;
     }
-    // значит переезд
-    if (fil["EnableToRelocate"] == false)
-        return false // hr запретил переезд
+    if (f == 'On-site & Remote') {
+        if (c['RemoteOpenYes'] == true) { // кандидат не против работать удаленно. Проверяем timezones
+            if (!fil['RemoteOpenTimezone']) // HR не указал желаемую timezone. Показываем всех кандидатов
+                return true;
+            var candidate_timezone = TimeZoneToInt(c['RemoteOpenTimezone']);
+            var filter_timezone = TimeZoneToInt(fil['RemoteOpenTimezone']);
+            var delta = fil['RemoteOpenHours'] ? parseInt(fil['RemoteOpenHours']) : 0;
+            if (candidate_timezone >= filter_timezone - delta && candidate_timezone <= filter_timezone + delta) // нужно проверить корректность расчетов
+                return true; // кандидат находится в нужном часовом поясе
+        }
+        var filter_location = fil['PreferredLocation'];
+        var filter_radius = fil['SearchRadius'] ? extractDistanceFromSearch(fil['SearchRadius']) : 100; // если HR не указал radius, дефолтно ставим 100км
+        var candidate_main_location = candidate['MainLocationGeo'];
+        if (!candidate_main_location) // у кандидата не указан адрес проживания
+            return false;
+        if (CompareAdresses(filter_location, candidate_main_location, filter_radius)) // сравниваем MainLocation кандидата. Если нас это не устраивает - фильтруем дальше
+            return true;
 
-    // Не знаем страну HR (Recruiter - Country)
+        // проверить, что принимаем из другой страны
+        var relocate = fil['EnableToRelocate'];
+        var relocate_ww = fil['RelocationWorldWide'];
+        var relocate_wc = fil['RelocationWithinCountry'];
+        var relocate_asia = fil['RelocationAsia'];
+        var relocate_eu = fil['RelocationEU'];
+        var work_permit = fil['WorkPermitFromMyCountry'];
+        var relocation_countries = fil['RelocationCountries'] ? fil['RelocationCountries'].map((country) => country['countryName']) : [];
+        var candidate_country = c['Country'] ? c['Country']['countryName'] : false;
+        if (candidate_country == false) { // если у preferedLocation кандидата указана некорректно. 
+            return false;
+        }
+        if (work_permit == true && c['WorkPermission'] == true && c['Country']['countryCode'] == fil['PreferedLocationCountry']) // сравниванием разрешение на работу
+            return true; //  нужно проверять города. Не можем вернуть 
+        if (c['Country']['countryCode'] != fil['PreferedLocationCountry']) { // если страна кандидата не совпадает со страной работы - проверяем.
+            if (!relocate) // HR никого не принимает - сразу нет
+                return false;
+            var c1 = c['Country']['continentName'] == 'Asia' && relocate_asia;
+            var c2 = c['Country']['continentCode'] == 'EU' && relocate_eu;
+            var c3 = relocation_countries.includes(candidate_country);
 
-    // Кандидат из страны, откуда принимают
-    if (ListToBool(fil["RelocationCountries"])) {
-        var c_country = c["Country"].map((item) => item["countryName"]);
-        var f_country = fil["RelocationCountries"].map((item) => item["countryName"]);
-        if (intersect(c_country, f_country).length != 0)
+            if (relocate_ww || c1 || c2 || c3) { // если нас устраивает какая-либо релокация
+                var results = c['CityGeo'].filter((city) => CompareAdresses(city, filter_location, filter_radius)); // и кандидат хочет переезжать к HR
+                if (results.length <= 0)
+                    return false;
+                else
+                    return true;
+            }
+            return false;
+        } else { // кандидат в стране рекрутера
+            var results = c['CityGeo'].filter((city) => CompareAdresses(city, filter_location, filter_radius));
+            if (results.length > 0 && relocate_wc) // кандидат хочет переехать и рекрутер не против
+                return true;
+            else
+                return false;
+        }
+    }
+    //////
+    /////
+    ////
+}
+
+const StatusChecker2 = (fil, c, candidate) => {
+    var f = fil["JobLocation"];
+    // 
+    // Сравниваем удаленную работу
+    //
+    if (c['RemoteOpenYes'] != true && f == 'Remote') // текущая prefered-location кандидата не подразумевает удаленную работу
+        return false;
+    if (!fil['RemoteOpenTimezone'] && (f == 'Remote' || f == 'On-site & Remote') && c['RemoteOpenYes'] == true) // HR не указал желаемую timezone. Показываем всех кандидатов
+        return true;
+    if (!c['RemoteOpenTimezone'] && f == 'Remote') // кандидат не указал часовой пояс. Выходим
+        return false;
+    if (c['RemoteOpenTimezone'] && fil['RemoteOpenTimezone']) { // корректно указан часовой пояс. Сравниваем
+        var candidate_timezone = TimeZoneToInt(c['RemoteOpenTimezone']);
+        var filter_timezone = TimeZoneToInt(fil['RemoteOpenTimezone']);
+        var delta = fil['RemoteOpenHours'] ? parseInt(fil['RemoteOpenHours']) : 0;
+        var cond1 = f == 'Remote' || (f == 'On-site & Remote' && c['RemoteOpenYes'] == true);
+        var cond2 = candidate_timezone >= filter_timezone - delta && candidate_timezone <= filter_timezone + delta;
+        if (cond1 && cond2) // нужно проверить корректность расчетов
+            return true; // кандидат находится в нужном часовом поясе
+    }
+    if (f == 'Remote') // дальше удаленную работу не сравниваем.
+        return false;
+    //
+    // Сравниваем очную работу
+    //
+    var filter_location = fil['PreferredLocation'];
+    var filter_radius = fil['SearchRadius'] ? extractDistanceFromSearch(fil['SearchRadius']) : 100; // если HR не указал radius, дефолтно ставим 100км
+    var candidate_main_location = candidate['MainLocationGeo'];
+    if (!candidate_main_location) // у кандидата не указан адрес проживания
+        return false;
+    if (CompareAdresses(filter_location, candidate_main_location, filter_radius)) // сравниваем MainLocation кандидата. Если нас это не устраивает - фильтруем дальше
+        return true;
+
+    // проверить, что принимаем из другой страны
+    var relocate = fil['EnableToRelocate'];
+    var relocate_ww = fil['RelocationWorldWide'];
+    var relocate_wc = fil['RelocationWithinCountry'];
+    var relocate_asia = fil['RelocationAsia'];
+    var relocate_eu = fil['RelocationEU'];
+    var work_permit = fil['WorkPermitFromMyCountry'];
+    var relocation_countries = fil['RelocationCountries'] ? fil['RelocationCountries'].map((country) => country['countryName']) : [];
+    var candidate_country = c['Country'] ? c['Country']['countryName'] : false;
+    if (candidate_country == false) { // если у preferedLocation кандидата указана некорректно. 
+        return false;
+    }
+    if (work_permit == true && c['WorkPermission'] == true && c['Country']['countryCode'] == fil['PreferedLocationCountry']) // сравниванием разрешение на работу
+        return true; //  нужно проверять города. Не можем вернуть 
+    if (c['Country']['countryCode'] != fil['PreferedLocationCountry']) { // если страна кандидата не совпадает со страной работы - проверяем.
+        if (!relocate) // HR никого не принимает - сразу нет
+            return false;
+        var c1 = c['Country']['continentName'] == 'Asia' && relocate_asia;
+        var c2 = c['Country']['continentCode'] == 'EU' && relocate_eu;
+        var c3 = relocation_countries.includes(candidate_country);
+
+        if (relocate_ww || c1 || c2 || c3) { // если нас устраивает какая-либо релокация
+            var results = c['CityGeo'].filter((city) => CompareAdresses(city, filter_location, filter_radius)); // и кандидат хочет переезжать к HR
+            if (results.length <= 0)
+                return false;
+            else
+                return true;
+        }
+        return false;
+    } else { // кандидат в стране рекрутера
+        var results = c['CityGeo'].filter((city) => CompareAdresses(city, filter_location, filter_radius));
+        if (results.length > 0 && relocate_wc) // кандидат хочет переехать и рекрутер не против
             return true;
         else
             return false;
     }
-    // Нужно прокинуть Recruiter в фильтры, без этого дальше сравнивать нельзя
-    return false;
 }
 
 const paymentModalityToYear = (coeff) => {
