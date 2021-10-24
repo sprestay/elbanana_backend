@@ -216,6 +216,8 @@ const StatusChecker = (fil, c, candidate) => {
     }
     if (f == 'On-site') { // только офисная работа
         var filter_location = fil['PreferredLocation'];
+        if (!filter_location) // HR не указал предпочитаемое место работы, значит показываем всех
+            return true;
         var filter_radius = fil['SearchRadius'] ? extractDistanceFromSearch(fil['SearchRadius']) : 100; // если HR не указал radius, дефолтно ставим 100км
         var candidate_main_location = candidate['MainLocationGeo'];
         if (!candidate_main_location) // у кандидата не указан адрес проживания
@@ -346,6 +348,8 @@ const StatusChecker2 = (fil, c, candidate) => {
     // Сравниваем очную работу
     //
     var filter_location = fil['PreferredLocation'];
+    if (!filter_location) // HR не указал prefered_location, поэтому показываем всех
+        return true;
     var filter_radius = fil['SearchRadius'] ? extractDistanceFromSearch(fil['SearchRadius']) : 100; // если HR не указал radius, дефолтно ставим 100км
     var candidate_main_location = candidate['MainLocationGeo'];
     if (!candidate_main_location) // у кандидата не указан адрес проживания
@@ -407,6 +411,8 @@ const SalaryComparasion = (f, c) => {
         min *= paymentModalityToYear(f["PaymentModality"]);
         max *= paymentModalityToYear(f["PaymentModality"]);
     }
+    if (!c['PreferedLocation']) // значит кандидат недозаполнен, или невалиден
+        return false;
     var res = c["PreferedLocation"].filter((i) => {
         if (i["SalaryMinimal"]) {
             var val = i["SalaryMinimal"];

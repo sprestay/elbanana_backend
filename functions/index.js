@@ -170,9 +170,9 @@ exports.getFilteredCandidates = functions.https.onRequest(async (request, respon
                 var items = [];
                 snapshot.forEach((doc) => items.push(doc.data()));
                 functions.logger.log("Всего items - ", items.length);
-                step1 = step2 = step3 = step4 = step5 = 0;//
+                step1 = step2 = step3 = step4 = step5 = step6 = 0;//
                 var filtered = items.filter((i) => filterFunction(result_filter, i)).map((i) => i['_id']);
-                functions.logger.log(step1, step2, step3, step4, step5);
+                functions.logger.log(step1, step2, step3, step4, step5, step6);
                 response.send({"result": "OK", "items": filtered});
             })
             .catch((err) => {
@@ -192,6 +192,7 @@ var step2 = 0;
 var step3 = 0;
 var step4 = 0;
 var step5 = 0;
+var step6 = 0;
 
 const filterFunction = (filter=filter, candidate=candidate) => {
     
@@ -250,7 +251,7 @@ const filterFunction = (filter=filter, candidate=candidate) => {
     // остальные фильтры
     if (!ff.searchcandidatelocation(filter, candidate))
         return false;
-
+    step6++;
     return true;
     
 }
