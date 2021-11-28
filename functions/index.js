@@ -327,13 +327,13 @@ exports.filtersAlert = functions.firestore.document('candidate/{user_id}').onCre
         return;
     }
     var filters = [];
-    snapshot.forEach((filter) => {
+    snapshot.forEach((d) => {
+        var filter = d.data();
         let compare_result = filterFunction(filter, candidate);
         if (compare_result) {
             filters.push({"user_id": candidate['_id'], "filter_id": filter['_id']});
         }
     });
-    functions.logger.log("Совпало " + filters.length + " фильтров");
     if (filters.length) {
         var tasks = filters.map((i) => webhookBubble(bubble_webhook_url, i['user_id'], i['filter_id']));
         await Promise.all(tasks);
