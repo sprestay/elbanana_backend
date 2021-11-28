@@ -1,11 +1,17 @@
 const { candidate } = require("./test_data_folders/test_user");
+const functions = require("firebase-functions");
 
 const languageLevelConvert = {
     "Beginner (A2)": 1,
+    "A2+": 1,
     "Intermediate (B1)": 2,
+    "B1+": 2, 
     "Work Proficient (B2)": 3,
+    "B2+": 3,
     "Fluent (C1)": 4,
+    "C1+": 4,
     "Native or Bilingual": 5,
+    "Native": 5,
 }
 
 
@@ -23,18 +29,30 @@ const intersect = (a, b) => {
 const experienceListToRange = (exp) => {
     if (exp == undefined)
         return [0,0];
-    let min = 20;
-    let max = 0;
-    let x1 = parseInt(exp.split('-')[0]);
-    let x2 = parseInt(exp.split('-')[1]);
-    if (isNaN(x2)) // костыль exp=6+
-        return [x1, x1];
-    min = Math.min(x1, x2, min);
-    max = Math.max(x1, x2, max);
-    return [min, max];
+    if (exp.indexOf('-') != -1) {
+        let x1 = parseInt(exp.split('-')[0]);
+        let x2 = parseInt(exp.split('-')[1]);
+        if (isNaN(x2)) // костыль exp=6+
+            return [x1, x1];
+        let min = Math.min(x1, x2, 20);
+        let max = Math.max(x1, x2, 0);
+        return [min, max];
+    } else if (exp.indexOf("+") != -1) {
+        try {
+            let min = parseInt(exp);
+            return [min, min];
+        } catch (e) {
+            functions.logger.log("Error parsing: ", exp, e);
+        }
+    }
+    return [20, 0];
 }
 
 const languageComparasion = (filter, candidate) => {
+    if (!ListToBool(filter)) { // в фильтре языки не заданы
+        return true;
+    }
+
     for (let lang of filter) {
         if (!lang['Language']) // выходим - языки не выбранны
             return true;
@@ -102,7 +120,10 @@ const TechTagParser = (item, experience_name) => {
         return undefined;
 
     for (let j = 0; j < item["TechTag"].length; j++) {
-        return [[item["TechTag"][j]["Name"]], item[experience_name] ? meanTime(experienceListToRange(item[experience_name])) : 0];
+        if (item["TechTag"][j]["Name"] != undefined)
+            return [item["TechTag"][j]["Name"], item[experience_name] ? meanTime(experienceListToRange(item[experience_name])) : 0];
+        else
+            return undefined;
     }
 }
 
@@ -111,7 +132,6 @@ const TechListComparasion = (f, c) => {
         return true;
     if (ListToBool(f["TechList"]) && !ListToBool(c['PreferedTech']))
         return false;
-
     var filters = {};
     f["TechList"].map((item) => {
         var x = TechTagParser(item, "Experience");
@@ -124,7 +144,7 @@ const TechListComparasion = (f, c) => {
         if (x != undefined)
             candidate[x[0]] = x[1];
     });
-
+    functions.logger.log("cand", candidate, "filter", filters);
     var keys = Object.keys(filters);
     for (let i = 0; i < keys.length; i++) {
         if (candidate[keys[i]] != undefined && filters[keys[i]] <= candidate[keys[i]]) {
@@ -398,7 +418,7 @@ const StatusChecker2 = (fil, c, candidate) => {
 const paymentModalityToYear = (coeff) => {
     if (coeff == "/ month")
         return 11.363636363636363;
-    else if (coeff = "/ hour")
+    else if (coeff == "/ hour")
         return 2000;
     else
         return 1;
@@ -411,7 +431,7 @@ const SalaryComparasion = (f, c) => {
         min *= paymentModalityToYear(f["PaymentModality"]);
         max *= paymentModalityToYear(f["PaymentModality"]);
     }
-    if (!c['PreferedLocation']) // значит кандидат недозаполнен, или невалиден
+    if (!ListToBool(c['PreferedLocation'])) // значит кандидат недозаполнен, или невалиден
         return false;
     var res = c["PreferedLocation"].filter((i) => {
         if (i["SalaryMinimal"]) {
@@ -420,7 +440,7 @@ const SalaryComparasion = (f, c) => {
                 val *= paymentModalityToYear(i["SalaryPeriod"]);
             return val >= min && val <= max ? true : false;
         }
-        return true; // если не указал - значит на все согласен
+        return false; // если не указал - значит на все согласен
     });
     return res.length > 0 ? true : false;
 }

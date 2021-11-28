@@ -10,6 +10,7 @@ const ff = require("./formatted_functions").formatted_functions;
 
 var bubble_url = "https://elbanana.com/version-test/api/1.1/obj/";
 var help = "https://elbanana.com/version-test/api/1.1/meta"; // все ключи, что есть
+const bubble_webhook_url = "https://elbanana.com/version-test/api/1.1/wf/hr_search_cand_alert";
 
 const config_candidate = {
     "RelatedLanguages": "candidatelanguage",
@@ -261,4 +262,81 @@ exports.getCandidateById = functions.https.onRequest(async (request, response) =
     const res = await admin.firestore().collection('candidate').doc(candidate_id).get();
     response.send(res.data());
     return;
+});
+
+
+exports.saveFilterToDB = functions.https.onRequest(async (request, response) => {
+    if (request.method != "POST") {
+        response.send({"error": "Request is not permitted"});
+        return;
+    }
+    var filter_id = request.body['filter_id'];
+    fetch(`${bubble_url}${"filter"}/${filter_id}`)
+    .then((res) => res.json())
+    .then((res) => {
+        if (res['response']) {
+            buildJsonObject(res['response'], config_filter)
+            .then(async (result) => await admin.firestore().collection('filters').doc(filter_id).set(result))
+            .then((res) => response.send({"result": "added"}))
+            .catch((err) => response.send({"error" : err}));
+            return;
+        } else {
+            response.send("Error! Maybe id is wrong");
+            return;
+        }
+    })
+    .catch((err) => response.send("Error occupied! " + err));
+});
+
+exports.deleteFilterToDB = functions.https.onRequest(async (request, response) => {
+    if (request.method != "POST") {
+        response.send({"error": "Request is not permitted"});
+        return;
+    }
+    var filter_id = request.body['filter_id'];
+    try {
+        await admin.firestore().collection('filters').doc(filter_id).delete();
+        response.send("successfully deleted");
+    } catch (e) {
+        response.send("got an error");
+        functions.logger.log("Error", e);
+        response.send("error");
+    }
+});
+
+const webhookBubble = async (url, user_id, filter_id) => {
+    fetch(url, {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            "user_id": user_id,
+            "filter_id": filter_id
+        })
+    }).then((res) => res.json()).then((res) => console.log("Result of bubble webhook", res)).catch((err) => console.log("Error fetching bubble endpoint", err));
+}
+
+
+exports.filtersAlert = functions.firestore.document('candidate/{user_id}').onCreate(async (snap, context) => {
+    functions.logger.log("Функция onCreate")
+    var candidate = snap.data();
+    const db = await admin.firestore().collection('filters');
+    var snapshot = await db.get();
+    if (snapshot.empty) {
+        return;
+    }
+    var filters = [];
+    snapshot.forEach((filter) => {
+        let compare_result = filterFunction(filter, candidate);
+        if (compare_result) {
+            filters.push({"user_id": candidate['_id'], "filter_id": filter['_id']});
+        }
+    });
+    functions.logger.log("Совпало " + filters.length + " фильтров");
+    if (filters.length) {
+        var tasks = filters.map((i) => webhookBubble(bubble_webhook_url, i['user_id'], i['filter_id']));
+        await Promise.all(tasks);
+        functions.logger.log("Дождались выполнения await Promise.all");
+    }
 });
