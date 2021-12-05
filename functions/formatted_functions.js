@@ -48,9 +48,21 @@ const experienceListToRange = (exp) => {
     return [20, 0];
 }
 
+const experienceListToRangeCycle = (filter, candidate_years_exp) => {
+    for (let i = 0; i < filter.length; i++) {
+        if (candidate_years_exp < experienceListToRange(filter[i])[0]) { // у кандидата опыта меньше, чем требует рекрутер
+            return true;
+        }
+    }
+    return false;
+}
+
 const languageComparasion = (filter, candidate) => {
     if (!ListToBool(filter)) { // в фильтре языки не заданы
         return true;
+    }
+    if (!ListToBool(candidate)) { // у кандидата не выбраны языки
+        return false;
     }
 
     for (let lang of filter) {
@@ -60,8 +72,14 @@ const languageComparasion = (filter, candidate) => {
         let c_l = candidate.filter((i) => i["Language"] == l);
         if (c_l) {
             c_l = c_l[0];
-            if (languageLevelConvert[c_l['LanguageLevel']] >= languageLevelConvert[lang["Language"]])
-                return true;
+            if (c_l && c_l['LanguageLevel']) {
+                if (languageLevelConvert[c_l['LanguageLevel']] >= languageLevelConvert[lang["Level"]])
+                    return true;
+            } else if (c_l && c_l['Level']) { // скорее всего данная проверка не нужна
+                if (languageLevelConvert[c_l['Level']] >= languageLevelConvert[lang["Level"]])
+                    return true;
+            }
+            
         }
     }
     return false;
@@ -100,20 +118,25 @@ const RolesComparasion = (f, c) => {
         if (!ListToBool(item["Role"]))
             return;
         for (let i = 0; i < item["Role"].length; i++) {
-            for (let j = 0; j < item['Role'][j]['Category']; j++) {
-                candidate_roles[`${item["Role"][i]["Name"]} | ${item["Role"][i]["Category"][j]}`] = item['ExperienceSelection'] ? meanTime(experienceListToRange(item["ExperienceSelection"])) : 0;
+            if (!item['Role'][i]['Category']) // если почему-то категорий нет - пропускаем
+                continue
+            for (let j = 0; j < item['Role'][i]['Category'].length; j++) {
+                candidate_roles[`${item["Role"][i]["Name"]} | ${item["Role"][i]["Category"][j]}`] = item['ExperienceSelection'] ? experienceListToRange(item["ExperienceSelection"])[1] : 0;//item['ExperienceYear'] ? item['ExperienceYear'] : 0;
             }
         }
     });
-    
     if (Object.keys(filter_roles).length == 0)
         return true;
-    Object.keys(filter_roles).forEach((item) => {
-        if (candidate_roles[item] && filter_roles[item] <= candidate_roles[item])
+    var results = Object.keys(filter_roles).filter((item) => {
+        if (candidate_roles[item] != undefined && filter_roles[item] <= candidate_roles[item]) {
             return true;
+        } else {
+            return false;
+        }
     });
-    return false
+    return results.length > 0 ? true : false;
 }
+
 // переписать - ужасно
 const TechTagParser = (item, experience_name) => {
     if (item["TechTag"] == undefined)

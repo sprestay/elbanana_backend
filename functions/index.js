@@ -225,7 +225,7 @@ const filterFunction = (filter=filter, candidate=candidate) => {
         return false;
     
     var cand_exp = candidate["ExperienceTotalYears"];
-    if (ff.listToBool(filter["ExperienceYears"]) && (!cand_exp || cand_exp < ff.experienceListToRange(filter["ExperienceYears"])[0] || cand_exp > ff.experienceListToRange(filter["ExperienceYears"])[1]))
+    if (ff.listToBool(filter["ExperienceYears"]) && (!cand_exp || cand_exp < ff.experienceListToRange(filter["ExperienceYears"][0])[0]))
         return false;
     
     if (!ff.techListComparasion(filter, candidate))
