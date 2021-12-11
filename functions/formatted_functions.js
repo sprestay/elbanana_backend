@@ -447,12 +447,16 @@ const paymentModalityToYear = (coeff) => {
         return 1;
 }
 
-const SalaryComparasion = (f, c) => {
+const SalaryComparasion = (f, c, currencies) => {
     var min = f["MinSalary"] ? f["MinSalary"] : 0;
     var max = f["MaxSalary"] ? f["MaxSalary"] : 10000000000000;
     if (f["PaymentModality"]) {
         min *= paymentModalityToYear(f["PaymentModality"]);
         max *= paymentModalityToYear(f["PaymentModality"]);
+    }
+    if (f['SalaryCurrency'] && currencies[f['SalaryCurrency']]) {
+        min *= currencies[f['SalaryCurrency']]['rate_to_eur'];
+        max *= currencies[f['SalaryCurrency']]['rate_to_eur'];
     }
     if (!ListToBool(c['PreferedLocation'])) // значит кандидат недозаполнен, или невалиден
         return false;
@@ -461,6 +465,8 @@ const SalaryComparasion = (f, c) => {
             var val = i["SalaryMinimal"];
             if (i["SalaryPeriod"])
                 val *= paymentModalityToYear(i["SalaryPeriod"]);
+            if (i['SalaryCurrency'] && currencies[i['SalaryCurrency']])
+                val *= currencies[i["SalaryCurrency"]]["rate_to_eur"];
             return val >= min && val <= max ? true : false;
         }
         return false; // если не указал - значит на все согласен
@@ -497,3 +503,6 @@ exports.formatted_functions = {
     "salaryComparasion": SalaryComparasion,
     'searchcandidatelocation': SearchCandidateLocation,
 }
+
+// SalaryCurrency - у кандидата в prefLocation
+// SalaryCurrency - у filter

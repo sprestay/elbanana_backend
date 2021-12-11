@@ -148,6 +148,14 @@ exports.addNewCandidate = functions.https.onRequest(async (request, response) =>
     .catch((err) => response.send("Error occupied! " + err));
 });
 
+const snapshot_to_json = (snapshot) => {
+    var res = {};
+    snapshot.forEach((doc) => {
+        res[doc.id] = doc.data();
+    });
+    return res;
+}
+
 exports.getFilteredCandidates = functions.https.onRequest(async (request, response) => {
     var filter_id = request.query['id'];
     if (!filter_id) {
@@ -162,17 +170,29 @@ exports.getFilteredCandidates = functions.https.onRequest(async (request, respon
             .then(async (result_filter) => {
                 // response.send(result_filter); //удалить
                 const db = await admin.firestore().collection('candidate');
+                const currency_rate_table = await admin.firestore().collection("CurrencyRate");
                 var snapshot = await db.get();
                 if (snapshot.empty) {
                     functions.logger.log("SNAPSHOT IS EMPTY");
                     response.send({"result" : "OK", "items": []});
                     return;
                 }
+                var currency_snapshot = await currency_rate_table.get();
+                if (currency_snapshot.empty) {
+                    functions.logger.log("Currency table is empty");
+                }
+                var currencies = {};
+                try {
+                    currencies = snapshot_to_json(currency_snapshot);
+                } catch (e) {
+                    functions.logger.log("Функция snapshot_to_json вернула ошибку");
+                }
+
                 var items = [];
                 snapshot.forEach((doc) => items.push(doc.data()));
                 functions.logger.log("Всего items - ", items.length);
                 step1 = step2 = step3 = step4 = step5 = step6 = 0;//
-                var filtered = items.filter((i) => filterFunction(result_filter, i)).map((i) => i['_id']);
+                var filtered = items.filter((i) => filterFunction(result_filter, i, currencies)).map((i) => i['_id']);
                 functions.logger.log(step1, step2, step3, step4, step5, step6);
                 response.send({"result": "OK", "items": filtered});
             })
@@ -195,7 +215,7 @@ var step4 = 0;
 var step5 = 0;
 var step6 = 0;
 
-const filterFunction = (filter=filter, candidate=candidate) => {
+const filterFunction = (filter=filter, candidate=candidate, currencies) => {
     
     if (ff.listToBool(filter["CategoryParent"]) && (!ff.listToBool(candidate["CategoryParent"]) || ff.intersect(filter["CategoryParent"], candidate["CategoryParent"]).length == 0))
         return false;
@@ -242,7 +262,7 @@ const filterFunction = (filter=filter, candidate=candidate) => {
         return false;
     step4++;
 
-    if (!ff.salaryComparasion(filter, candidate))
+    if (!ff.salaryComparasion(filter, candidate, currencies))
         return false;
     step5++;
 
