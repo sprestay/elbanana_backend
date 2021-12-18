@@ -64,7 +64,7 @@ const languageComparasion = (filter, candidate) => {
     if (!ListToBool(candidate)) { // у кандидата не выбраны языки
         return false;
     }
-
+    var matched_langs = 0; //  считаем количество совпавших языков
     for (let lang of filter) {
         if (!lang['Language']) // выходим - языки не выбранны
             return true;
@@ -74,15 +74,17 @@ const languageComparasion = (filter, candidate) => {
             c_l = c_l[0];
             if (c_l && c_l['LanguageLevel']) {
                 if (languageLevelConvert[c_l['LanguageLevel']] >= languageLevelConvert[lang["Level"]])
-                    return true;
+                    matched_langs++;
+                    // return true;
             } else if (c_l && c_l['Level']) { // скорее всего данная проверка не нужна
                 if (languageLevelConvert[c_l['Level']] >= languageLevelConvert[lang["Level"]])
-                    return true;
+                    matched_langs++;
+                    // return true;
             }
             
         }
     }
-    return false;
+    return matched_langs >= filter.length ? true : false;
 }
 
 const ListToBool = (a) => {
