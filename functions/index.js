@@ -157,26 +157,55 @@ const snapshot_to_json = (snapshot) => {
 }
 
 exports.getFilteredCandidates = functions.https.onRequest(async (request, response) => {
-    var filter_id = request.query['id'];
+    var filter_id = request.body['id'];
     if (!filter_id) {
         response.send({"error": "id is empty"});
         return;
     }
+    if (typeof request.body == "string")
+        request.body = JSON.parse(request.body);
+
+    try {
+        var data = request.body['ids'];
+        data = data.split(", ");
+        if (!data) {
+            response.send({"error": "list of ids is empty"});
+            return;
+        }
+    } catch (err) {
+        functions.logger.log("ERROR, ", err);
+        response.send({"error": "error parsing ids_list"});
+        return;
+    }
+    
     fetch(`${bubble_url}${"filter"}/${filter_id}`)
     .then((res) => res.json())
     .then((res) => {
         if (res['response']) {
             buildJsonObject(res['response'], config_filter)
             .then(async (result_filter) => {
-                // response.send(result_filter); //удалить
                 const db = await admin.firestore().collection('candidate');
                 const currency_rate_table = await admin.firestore().collection("CurrencyRate");
-                var snapshot = await db.get();
-                if (snapshot.empty) {
-                    functions.logger.log("SNAPSHOT IS EMPTY");
+
+                var promises = data.map(async (e) => await db.doc(e).get()
+                    .then((snapshot) => {
+                        if (snapshot.empty)
+                            return null;
+                        else
+                            return snapshot.data();
+                    })
+                    .catch((err) => {
+                        console.log("error extracting cands from db");
+                        return null;
+                    })
+                );
+                promises = await Promise.all(promises);
+                var items = promises.filter((e) => e != null);
+                if (items.length == 0) {
                     response.send({"result" : "OK", "items": []});
                     return;
                 }
+
                 var currency_snapshot = await currency_rate_table.get();
                 if (currency_snapshot.empty) {
                     functions.logger.log("Currency table is empty");
@@ -188,8 +217,6 @@ exports.getFilteredCandidates = functions.https.onRequest(async (request, respon
                     functions.logger.log("Функция snapshot_to_json вернула ошибку");
                 }
 
-                var items = [];
-                snapshot.forEach((doc) => items.push(doc.data()));
                 functions.logger.log("Всего items - ", items.length);
                 step1 = step2 = step3 = step4 = step5 = step6 = 0;//
                 var filtered = items.filter((i) => filterFunction(result_filter, i, currencies)).map((i) => i['_id']);
@@ -223,8 +250,8 @@ const filterFunction = (filter=filter, candidate=candidate, currencies) => {
         return false;
     if (ff.listToBool(filter["IndustryList"]) && (!ff.listToBool(candidate['IndustryReady']) || ff.intersect(filter["IndustryList"], candidate["IndustryReady"]).length == 0))
         return false;
-    if (filter["SearchSubstring"] && (!candidate['MainTitle'] || !candidate["MainTitle"].toLowerCase().includes(filter['SearchSubstring'].toLowerCase())))
-        return false;
+    // if (filter["SearchSubstring"] && (!candidate['MainTitle'] || !candidate["MainTitle"].toLowerCase().includes(filter['SearchSubstring'].toLowerCase())))
+    //     return false;
     
     step1++;
     // тип работы 
@@ -360,3 +387,42 @@ exports.filtersAlert = functions.firestore.document('candidate/{user_id}').onCre
         functions.logger.log("Дождались выполнения await Promise.all");
     }
 });
+
+
+exports.dropEmptyVals = functions.https.onRequest(async (request, response) => {
+    if (request.method != "POST") {
+        response.send({"error": "Request is not permitted"});
+        return;
+    }
+    var filter_id = request.body['filter_id'];
+    fetch(`${bubble_url}${"filter"}/${filter_id}`).then((res) => res.json()).then((res) => { 
+        if (res['response']) {
+            buildJsonObject(res['response'], config_filter).then((r) => response.send(r)).catch((e) => response.send("error"));
+            return;
+        } else {
+            response.send("In is wrong");
+            return;
+        }
+    }).catch((err) => response.send("Error occupied! " + err));
+});
+
+async function getTemplate() {
+    const config = admin.remoteConfig();
+    return await config.getTemplate()
+        .then(template => {
+            console.log('ETag from server: ' + template.etag);
+            const templateStr = JSON.stringify(template);
+            return templateStr;
+        })
+        .catch(err => {
+            console.error('Unable to get template');
+            console.error(err);
+            return null;
+        });
+}
+
+exports.testGetRemoteConfig = functions.https.onRequest(async (request, response) => {
+    var result = await getTemplate();
+    response.send(result);
+    return;
+})
