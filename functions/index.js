@@ -9,8 +9,10 @@ const filter = require('./test_data_folders/test_filter').filter;
 const ff = require("./formatted_functions").formatted_functions;
 
 var bubble_url = "https://elbanana.com/version-test/api/1.1/obj/";
+var prod_bubble_url = "https://elbanana.com/api/1.1/obj/";
 var help = "https://elbanana.com/version-test/api/1.1/meta"; // все ключи, что есть
 const bubble_webhook_url = "https://elbanana.com/version-test/api/1.1/wf/hr_search_cand_alert";
+const prod_bubble_webhook_url = "https://elbanana.com/api/1.1/wf/hr_search_cand_alert";
 
 const config_candidate = {
     "RelatedLanguages": "candidatelanguage",
@@ -100,8 +102,9 @@ const buildJsonObject = async (item, config) => {
 
 exports.getAllDatabase = functions.https.onRequest(async (request, response) => {
     var query = [request.query.limit ? request.query.limit : '', request.query.cursor ? request.query.cursor : ''];
+    var is_live = request.get('Referer') == "yes" ? true : false;
     query = query.filter((i) => i != '');
-    fetch(bubble_url + "candidate?" + query.join("&"))
+    fetch((is_live ? prod_bubble_url : bubble_url) + "candidate?" + query.join("&"))
     .then((res) => res.json())
     .then(async (res) => {
         if (res['response']['results']) {
@@ -114,7 +117,7 @@ exports.getAllDatabase = functions.https.onRequest(async (request, response) => 
                 });
             }));
             items.forEach(async (item) => {
-                await admin.firestore().collection('candidate').doc(item['_id']).set(item);
+                await admin.firestore().collection(is_live ? "live_candidate" : 'candidate').doc(item['_id']).set(item);
             })
             return {"status": "ok"}
         } else {
@@ -130,13 +133,14 @@ exports.addNewCandidate = functions.https.onRequest(async (request, response) =>
         response.send({"error": "Request is not permitted"});
         return;
     }
+    var is_live = request.get('Referer') == "yes" ? true : false;
     var user_id = request.body['user_id'];
-    fetch(`${bubble_url}${"candidate"}/${user_id}`)
+    fetch(`${is_live ? prod_bubble_url : bubble_url}${"candidate"}/${user_id}`)
     .then((res) => res.json())
     .then((res) => {
         if (res['response']) {
             buildJsonObject(res['response'], config_candidate)
-            .then(async (result) => await admin.firestore().collection('candidate').doc(user_id).set(result))
+            .then(async (result) => await admin.firestore().collection(is_live ? "live_candidate" : 'candidate').doc(user_id).set(result))
             .then((res) => response.send({"result": "added"}))
             .catch((err) => response.send({"error" : err}));
             return;
@@ -158,6 +162,7 @@ const snapshot_to_json = (snapshot) => {
 
 exports.getFilteredCandidates = functions.https.onRequest(async (request, response) => {
     var filter_id = request.body['id'];
+    var is_live = request.get('Referer') == "yes" ? true : false;
     if (!filter_id) {
         response.send({"error": "id is empty"});
         return;
@@ -178,13 +183,13 @@ exports.getFilteredCandidates = functions.https.onRequest(async (request, respon
         return;
     }
     
-    fetch(`${bubble_url}${"filter"}/${filter_id}`)
+    fetch(`${is_live ? prod_bubble_url : bubble_url}${"filter"}/${filter_id}`)
     .then((res) => res.json())
     .then((res) => {
         if (res['response']) {
             buildJsonObject(res['response'], config_filter)
             .then(async (result_filter) => {
-                const db = await admin.firestore().collection('candidate');
+                const db = await admin.firestore().collection(is_live ? "live_candidate" : 'candidate');
                 const currency_rate_table = await admin.firestore().collection("CurrencyRate");
 
                 var promises = data.map(async (e) => await db.doc(e).get()
@@ -306,24 +311,26 @@ const filterFunction = (filter=filter, candidate=candidate, currencies) => {
 
 exports.getCandidateById = functions.https.onRequest(async (request, response) => {
     var candidate_id = request.query['id'];
-    const res = await admin.firestore().collection('candidate').doc(candidate_id).get();
+    var is_live = request.get('Referer') == "yes" ? true : false;
+    const res = await admin.firestore().collection(is_live ? "live_candidate" : 'candidate').doc(candidate_id).get();
     response.send(res.data());
     return;
 });
 
 
 exports.saveFilterToDB = functions.https.onRequest(async (request, response) => {
+    var is_live = request.get('Referer') == "yes" ? true : false;
     if (request.method != "POST") {
         response.send({"error": "Request is not permitted"});
         return;
     }
     var filter_id = request.body['filter_id'];
-    fetch(`${bubble_url}${"filter"}/${filter_id}`)
+    fetch(`${is_live ? prod_bubble_url : bubble_url}${"filter"}/${filter_id}`)
     .then((res) => res.json())
     .then((res) => {
         if (res['response']) {
             buildJsonObject(res['response'], config_filter)
-            .then(async (result) => await admin.firestore().collection('filters').doc(filter_id).set(result))
+            .then(async (result) => await admin.firestore().collection(is_live ? "live_filters" : 'filters').doc(filter_id).set(result))
             .then((res) => response.send({"result": "added"}))
             .catch((err) => response.send({"error" : err}));
             return;
@@ -336,13 +343,14 @@ exports.saveFilterToDB = functions.https.onRequest(async (request, response) => 
 });
 
 exports.deleteFilterToDB = functions.https.onRequest(async (request, response) => {
+    var is_live = request.get('Referer') == "yes" ? true : false;
     if (request.method != "POST") {
         response.send({"error": "Request is not permitted"});
         return;
     }
     var filter_id = request.body['filter_id'];
     try {
-        await admin.firestore().collection('filters').doc(filter_id).delete();
+        await admin.firestore().collection(is_live ? "live_filters": 'filters').doc(filter_id).delete();
         response.send("successfully deleted");
     } catch (e) {
         response.send("got an error");
@@ -388,14 +396,38 @@ exports.filtersAlert = functions.firestore.document('candidate/{user_id}').onCre
     }
 });
 
+exports.prodFiltersAlert = functions.firestore.document('live_candidate/{user_id}').onCreate(async (snap, context) => {
+    functions.logger.log("Функция onCreate")
+    var candidate = snap.data();
+    const db = await admin.firestore().collection('live_filters');
+    var snapshot = await db.get();
+    if (snapshot.empty) {
+        return;
+    }
+    var filters = [];
+    snapshot.forEach((d) => {
+        var filter = d.data();
+        let compare_result = filterFunction(filter, candidate);
+        if (compare_result) {
+            filters.push({"user_id": candidate['_id'], "filter_id": filter['_id']});
+        }
+    });
+    if (filters.length) {
+        var tasks = filters.map((i) => webhookBubble(prod_bubble_webhook_url, i['user_id'], i['filter_id']));
+        await Promise.all(tasks);
+        functions.logger.log("Дождались выполнения await Promise.all");
+    }
+});
+
 
 exports.dropEmptyVals = functions.https.onRequest(async (request, response) => {
     if (request.method != "POST") {
         response.send({"error": "Request is not permitted"});
         return;
     }
+    var is_live = request.get('Referer') == "yes" ? true : false;
     var filter_id = request.body['filter_id'];
-    fetch(`${bubble_url}${"filter"}/${filter_id}`).then((res) => res.json()).then((res) => { 
+    fetch(`${is_live ? prod_bubble_url : bubble_url}${"filter"}/${filter_id}`).then((res) => res.json()).then((res) => { 
         if (res['response']) {
             buildJsonObject(res['response'], config_filter).then((r) => response.send(r)).catch((e) => response.send("error"));
             return;
@@ -424,5 +456,11 @@ async function getTemplate() {
 exports.testGetRemoteConfig = functions.https.onRequest(async (request, response) => {
     var result = await getTemplate();
     response.send(result);
+    return;
+})
+
+exports.testGetUrl = functions.https.onRequest(async (request, response) => {
+    var is_live = request.get('Referer') == "yes" ? true : false;
+    response.send(is_live ? prod_bubble_url : bubble_url);
     return;
 })
