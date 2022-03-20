@@ -58,13 +58,13 @@ const config_filter = {
 // нет смысла сохранять вложенные структуры в отдельные коллекции, так как 
 // у каждого пользователя будет уникальный набор ссылок - следовательно один вложенный объект будет
 // соотвествовать только одному пользователю
-const getSubItem = async (endpoint, item_id, config) => {
-    return fetch(`${bubble_url}${endpoint}/${item_id}`)
+const getSubItem = async (endpoint, item_id, config, is_live=false) => {
+    return fetch(`${is_live ? prod_bubble_url : bubble_url}${endpoint}/${item_id}`)
     .then((res) => res.json())
     .then(async (res) => {
         if (res['response']) {
             var subresult = res['response'];
-            return await buildJsonObject(subresult, config).then((res) => { return {"result": "successs", "data": res} }).catch((err) => { return {"result": "error", "desc": "error in recursion"} } );
+            return await buildJsonObject(subresult, config, is_live).then((res) => { return {"result": "successs", "data": res} }).catch((err) => { return {"result": "error", "desc": "error in recursion"} } );
         } else {
             return {"result": "error", "desc": "res.response produced an error"}
         }
@@ -73,13 +73,13 @@ const getSubItem = async (endpoint, item_id, config) => {
     })
 }
 
-const buildJsonObject = async (item, config) => {
+const buildJsonObject = async (item, config, is_live=false) => {
     for (let key of Object.keys(item)) {
         if (config[key]) { // получили вложенный объект. Будем создавать под него отдельную коллекцию
             if (Array.isArray(item[key])) { // много вложенных объектов
-                var bubble_responses = item[key].map((subitem) => getSubItem(config[key], subitem, config).then((res) => res));
+                var bubble_responses = item[key].map((subitem) => getSubItem(config[key], subitem, config, is_live).then((res) => res));
             } else { // единичный объект
-                var bubble_responses = [getSubItem(config[key], item[key], config).then(res => res)];
+                var bubble_responses = [getSubItem(config[key], item[key], config, is_live).then(res => res)];
             }
 
             await Promise.all(bubble_responses).then((bubble) => {
@@ -88,10 +88,10 @@ const buildJsonObject = async (item, config) => {
                     item[key] = bubble.map((i) => i['data']);
                 } else {  // что будет, когда в здесь будет ошибка?
                     console.log("ERROR", `Множественный запрос вернул ${errors.length} ошибку из ${bubble.length}. endpoint: ${config[key]} keys: ${item[key].join(",")}`);
-                    response.send({
-                        "status": "error",
-                        "desc": `Множественный запрос вернул ${errors.length} ошибку из ${bubble.length}. endpoint: ${config[key]} keys: ${item[key].join(",")}`,
-                    });
+                    // response.send({
+                    //     "status": "error",
+                    //     "desc": `Множественный запрос вернул ${errors.length} ошибку из ${bubble.length}. endpoint: ${config[key]} keys: ${item[key].join(",")}`,
+                    // });
                 }
             });                        
         }
@@ -103,6 +103,7 @@ const buildJsonObject = async (item, config) => {
 exports.getAllDatabase = functions.https.onRequest(async (request, response) => {
     var query = [request.query.limit ? request.query.limit : '', request.query.cursor ? request.query.cursor : ''];
     var is_live = request.get('Referer') == "yes" ? true : false;
+    console.log(`IS LIVE ${is_live}`);
     query = query.filter((i) => i != '');
     fetch((is_live ? prod_bubble_url : bubble_url) + "candidate?" + query.join("&"))
     .then((res) => res.json())
@@ -112,7 +113,7 @@ exports.getAllDatabase = functions.https.onRequest(async (request, response) => 
 
             // новый подход
             await Promise.all(items.map(async (item) => {
-                await buildJsonObject(item, config_candidate).then(res =>  {
+                await buildJsonObject(item, config_candidate, is_live).then(res =>  {
                     item = res
                 });
             }));
@@ -139,7 +140,7 @@ exports.addNewCandidate = functions.https.onRequest(async (request, response) =>
     .then((res) => res.json())
     .then((res) => {
         if (res['response']) {
-            buildJsonObject(res['response'], config_candidate)
+            buildJsonObject(res['response'], config_candidate, is_live)
             .then(async (result) => await admin.firestore().collection(is_live ? "live_candidate" : 'candidate').doc(user_id).set(result))
             .then((res) => response.send({"result": "added"}))
             .catch((err) => response.send({"error" : err}));
@@ -187,7 +188,7 @@ exports.getFilteredCandidates = functions.https.onRequest(async (request, respon
     .then((res) => res.json())
     .then((res) => {
         if (res['response']) {
-            buildJsonObject(res['response'], config_filter)
+            buildJsonObject(res['response'], config_filter, is_live)
             .then(async (result_filter) => {
                 const db = await admin.firestore().collection(is_live ? "live_candidate" : 'candidate');
                 const currency_rate_table = await admin.firestore().collection("CurrencyRate");
@@ -329,7 +330,7 @@ exports.saveFilterToDB = functions.https.onRequest(async (request, response) => 
     .then((res) => res.json())
     .then((res) => {
         if (res['response']) {
-            buildJsonObject(res['response'], config_filter)
+            buildJsonObject(res['response'], config_filter, is_live)
             .then(async (result) => await admin.firestore().collection(is_live ? "live_filters" : 'filters').doc(filter_id).set(result))
             .then((res) => response.send({"result": "added"}))
             .catch((err) => response.send({"error" : err}));
