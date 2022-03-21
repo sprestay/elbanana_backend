@@ -25,39 +25,18 @@ const config_candidate = {
     "Country": "country",
     "Role": "candidaterolelist",
     "TechTag": "candidatetechlist",
-    // "Skill": "candidateskillslist",
-    // "MainJobSearchStatus": "jobsearchstatus",
-    // "MainReadyStart": 'readystartmonth',
-    // "MainReadyStartMonth": "ReadyStartMonth",
-    // "PreferedContinent": ,
-    // "candidateroleexperience",
     "RelatedExperience": "candidateexperience",
-    // "JobTypeParttimeHoursMonth":,
 }
-// Country - возвращает id
-// CandidatePrefTech - TechTag (candidateTechList)
-// НЕОБХОДИМО ПРОДУМАТЬ ПОИСК ВЛОЖЕННЫХ ДАННЫХ
-// (хардкодим - не выдержим изменений в базе. Переделать) - например явно указывает Permanent
 
-
-
-// проблема, что не можем использовать option sets
 const config_filter = {
     "TechList": "filtertechlist",
     "Languages": "filterlanguage",
     "Roles": "filterrolelist",
-    // "Skills": "candidateskillslist",
     "CandidateRoleList": "candidaterolelist",
     "TechTag": "candidatetechlist",
     "RelocationCountries": "country",
 }
-// Filter - Roles - list of FilterRoleList - (CandidateRoleList, Experience)
-// Candidate - PreferedRole - list of CandidatePrefRoles - (Candidate, ExperienceSelection, ExperienceYear, Role (CandidateRoleList))
 
-
-// нет смысла сохранять вложенные структуры в отдельные коллекции, так как 
-// у каждого пользователя будет уникальный набор ссылок - следовательно один вложенный объект будет
-// соотвествовать только одному пользователю
 const getSubItem = async (endpoint, item_id, config, is_live=false) => {
     return fetch(`${is_live ? prod_bubble_url : bubble_url}${endpoint}/${item_id}`)
     .then((res) => res.json())
@@ -103,7 +82,6 @@ const buildJsonObject = async (item, config, is_live=false) => {
 exports.getAllDatabase = functions.https.onRequest(async (request, response) => {
     var query = [request.query.limit ? request.query.limit : '', request.query.cursor ? request.query.cursor : ''];
     var is_live = request.get('Referer') == "yes" ? true : false;
-    console.log(`IS LIVE ${is_live}`);
     query = query.filter((i) => i != '');
     fetch((is_live ? prod_bubble_url : bubble_url) + "candidate?" + query.join("&"))
     .then((res) => res.json())
